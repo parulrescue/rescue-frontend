@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRescues, getAnimals, updateRescueDate } from "../api/rescue";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuthStore } from "../store/authStore";
 import { PlusCircle, ClipboardList, ChevronLeft, ChevronRight, Search, Filter, X, Calendar, Pencil, Check } from "lucide-react";
 
 function toDatetimeLocal(dateStr) {
@@ -12,7 +11,7 @@ function toDatetimeLocal(dateStr) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function DateCell({ rescue, isMine }) {
+function DateCell({ rescue }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
@@ -52,15 +51,13 @@ function DateCell({ rescue, isMine }) {
   return (
     <div className="flex items-center gap-1.5 group/date">
       <span>{new Date(rescue.createdAt).toLocaleDateString()}</span>
-      {isMine && (
-        <button
-          onClick={(e) => { e.stopPropagation(); setValue(toDatetimeLocal(rescue.createdAt)); setEditing(true); }}
-          className="p-1 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all opacity-0 group-hover/date:opacity-100"
-          title="Edit date"
-        >
-          <Pencil size={12} />
-        </button>
-      )}
+      <button
+        onClick={(e) => { e.stopPropagation(); setValue(toDatetimeLocal(rescue.createdAt)); setEditing(true); }}
+        className="p-1 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all opacity-0 group-hover/date:opacity-100"
+        title="Edit date"
+      >
+        <Pencil size={12} />
+      </button>
     </div>
   );
 }
@@ -85,7 +82,6 @@ export default function RescueList() {
   const [limit, setLimit] = useState(10);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuthStore();
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -316,7 +312,7 @@ export default function RescueList() {
                         {r.from_address?.substring(0, 30)} → {r.to_address?.substring(0, 30)}
                       </td>
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        <DateCell rescue={r} isMine={user && r.creator && user.id === r.creator.id} />
+                        <DateCell rescue={r} />
                       </td>
                     </tr>
                   ))}

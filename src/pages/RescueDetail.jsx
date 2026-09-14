@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getRescue, updateRescueDate } from "../api/rescue";
-import { useAuthStore } from "../store/authStore";
 import { ArrowLeft, MapPin, User, Image, Video, Users, Clock, Play, Pencil, Check, X } from "lucide-react";
 
 const statusColors = {
@@ -23,7 +22,6 @@ export default function RescueDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuthStore();
 
   const [editingDate, setEditingDate] = useState(false);
   const [dateValue, setDateValue] = useState("");
@@ -56,8 +54,6 @@ export default function RescueDetail() {
   if (isLoading) return <div className="text-center py-12 text-slate-500">Loading...</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load rescue</div>;
   if (!rescue) return <div className="text-center py-12 text-slate-500">Rescue not found</div>;
-
-  const isCreator = user && rescue.creator && user.id === rescue.creator.id;
 
   const startEditDate = () => {
     setDateError("");
@@ -200,11 +196,9 @@ export default function RescueDetail() {
             ) : (
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={12} /> Created: {new Date(rescue.createdAt).toLocaleString()}
-                {isCreator && (
-                  <button onClick={startEditDate} className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit date">
-                    <Pencil size={12} />
-                  </button>
-                )}
+                <button onClick={startEditDate} className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit date">
+                  <Pencil size={12} />
+                </button>
               </span>
             )}
             {rescue.updatedAt && <span>Updated: {new Date(rescue.updatedAt).toLocaleString()}</span>}
