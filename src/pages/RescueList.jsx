@@ -11,7 +11,22 @@ function toDatetimeLocal(dateStr) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function DateCell({ rescue }) {
+function DateCell({ rescue, editing, value, onChange }) {
+  if (editing) {
+    return (
+      <input
+        type="datetime-local"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onClick={(e) => e.stopPropagation()}
+        className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+      />
+    );
+  }
+  return <span>{new Date(rescue.createdAt).toLocaleDateString()}</span>;
+}
+
+function RescueActions({ rescue }) {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
@@ -24,41 +39,39 @@ function DateCell({ rescue }) {
     },
   });
 
-  if (editing) {
-    return (
-      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
-        <input
-          type="datetime-local"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
-        />
-        <button
-          onClick={() => value && dateMut.mutate(new Date(value).toISOString())}
-          disabled={dateMut.isPending}
-          className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-50"
-          title="Save"
-        >
-          <Check size={14} />
-        </button>
-        <button onClick={() => setEditing(false)} className="p-1 text-slate-400 hover:bg-slate-50 rounded-lg transition-all" title="Cancel">
-          <X size={14} />
-        </button>
-      </div>
-    );
-  }
+  const startEdit = (e) => {
+    e.stopPropagation();
+    setValue(toDatetimeLocal(rescue.createdAt));
+    setEditing(true);
+  };
 
   return (
-    <div className="flex items-center gap-1.5 group/date">
-      <span>{new Date(rescue.createdAt).toLocaleDateString()}</span>
-      <button
-        onClick={(e) => { e.stopPropagation(); setValue(toDatetimeLocal(rescue.createdAt)); setEditing(true); }}
-        className="p-1 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all opacity-0 group-hover/date:opacity-100"
-        title="Edit date"
-      >
-        <Pencil size={12} />
-      </button>
-    </div>
+    <>
+      <td className="px-6 py-4 text-sm text-slate-500">
+        <DateCell rescue={rescue} editing={editing} value={value} onChange={setValue} />
+      </td>
+      <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+        {editing ? (
+          <div className="flex items-center justify-end gap-1.5">
+            <button
+              onClick={() => value && dateMut.mutate(new Date(value).toISOString())}
+              disabled={dateMut.isPending}
+              className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-50"
+              title="Save"
+            >
+              <Check size={14} />
+            </button>
+            <button onClick={() => setEditing(false)} className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-all" title="Cancel">
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <button onClick={startEdit} className="p-1.5 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit date">
+            <Pencil size={14} />
+          </button>
+        )}
+      </td>
+    </>
   );
 }
 
@@ -286,6 +299,7 @@ export default function RescueList() {
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Info Provider</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">From / To</th>
                     <th className="text-left px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                    <th className="text-right px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -311,9 +325,7 @@ export default function RescueList() {
                       <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">
                         {r.from_address?.substring(0, 30)} → {r.to_address?.substring(0, 30)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">
-                        <DateCell rescue={r} />
-                      </td>
+                      <RescueActions rescue={r} />
                     </tr>
                   ))}
                 </tbody>
