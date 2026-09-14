@@ -8,4 +8,4 @@ export const createRescue = (formData) =>
   });
 export const getAnimals = () => api.get("/animals");
 export const getToAddresses = () => api.get("/to-addresses");
-export const updateRescueDate = (id, rescue_date) => api.put(`/rescues/${id}/date`, { rescue_date });
+export const updateRescueDate = (id, rescue_date) => api.post(`/rescues/${id}/date`, { rescue_date });
