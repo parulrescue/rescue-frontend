@@ -23,7 +23,7 @@ function DateCell({ rescue, editing, value, onChange }) {
       />
     );
   }
-  return <span>{new Date(rescue.createdAt).toLocaleDateString()}</span>;
+  return <span>{new Date(rescue.rescue_date).toLocaleDateString()}</span>;
 }
 
 function RescueActions({ rescue }) {
@@ -32,7 +32,7 @@ function RescueActions({ rescue }) {
   const [value, setValue] = useState("");
 
   const dateMut = useMutation({
-    mutationFn: (created_at) => updateRescueDate(rescue.id, created_at),
+    mutationFn: (rescue_date) => updateRescueDate(rescue.id, rescue_date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rescues"] });
       setEditing(false);
@@ -41,7 +41,7 @@ function RescueActions({ rescue }) {
 
   const startEdit = (e) => {
     e.stopPropagation();
-    setValue(toDatetimeLocal(rescue.createdAt));
+    setValue(toDatetimeLocal(rescue.rescue_date));
     setEditing(true);
   };
 

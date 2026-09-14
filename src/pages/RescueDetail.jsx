@@ -42,7 +42,7 @@ export default function RescueDetail() {
   } : null;
 
   const dateMut = useMutation({
-    mutationFn: (created_at) => updateRescueDate(id, created_at),
+    mutationFn: (rescue_date) => updateRescueDate(id, rescue_date),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rescue", id] });
       setEditingDate(false);
@@ -57,7 +57,7 @@ export default function RescueDetail() {
 
   const startEditDate = () => {
     setDateError("");
-    setDateValue(toDatetimeLocal(rescue.createdAt));
+    setDateValue(toDatetimeLocal(rescue.rescue_date));
     setEditingDate(true);
   };
 
@@ -195,7 +195,7 @@ export default function RescueDetail() {
               </div>
             ) : (
               <span className="inline-flex items-center gap-1.5">
-                <Clock size={12} /> Created: {new Date(rescue.createdAt).toLocaleString()}
+                <Clock size={12} /> Rescue Date: {new Date(rescue.rescue_date).toLocaleString()}
                 <button onClick={startEditDate} className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit date">
                   <Pencil size={12} />
                 </button>

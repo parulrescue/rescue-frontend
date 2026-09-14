@@ -98,7 +98,7 @@ export default function Dashboard() {
                     <p className="text-sm text-slate-900">
                       <span className="font-bold">#{r.id}</span> — {r.animal_type}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">{new Date(r.createdAt).toLocaleDateString()}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{new Date(r.rescue_date).toLocaleDateString()}</p>
                   </div>
                 </div>
                 <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[r.status] || ""}`}>
