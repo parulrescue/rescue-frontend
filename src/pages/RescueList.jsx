@@ -1,8 +1,69 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { getRescues, getAnimals } from "../api/rescue";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRescues, getAnimals, updateRescueDate } from "../api/rescue";
 import { Link, useNavigate } from "react-router-dom";
-import { PlusCircle, ClipboardList, ChevronLeft, ChevronRight, Search, Filter, X, Calendar } from "lucide-react";
+import { useAuthStore } from "../store/authStore";
+import { PlusCircle, ClipboardList, ChevronLeft, ChevronRight, Search, Filter, X, Calendar, Pencil, Check } from "lucide-react";
+
+function toDatetimeLocal(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function DateCell({ rescue, isMine }) {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+
+  const dateMut = useMutation({
+    mutationFn: (created_at) => updateRescueDate(rescue.id, created_at),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rescues"] });
+      setEditing(false);
+    },
+  });
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <input
+          type="datetime-local"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+        />
+        <button
+          onClick={() => value && dateMut.mutate(new Date(value).toISOString())}
+          disabled={dateMut.isPending}
+          className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-50"
+          title="Save"
+        >
+          <Check size={14} />
+        </button>
+        <button onClick={() => setEditing(false)} className="p-1 text-slate-400 hover:bg-slate-50 rounded-lg transition-all" title="Cancel">
+          <X size={14} />
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 group/date">
+      <span>{new Date(rescue.createdAt).toLocaleDateString()}</span>
+      {isMine && (
+        <button
+          onClick={(e) => { e.stopPropagation(); setValue(toDatetimeLocal(rescue.createdAt)); setEditing(true); }}
+          className="p-1 text-slate-300 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all opacity-0 group-hover/date:opacity-100"
+          title="Edit date"
+        >
+          <Pencil size={12} />
+        </button>
+      )}
+    </div>
+  );
+}
 
 const statusColors = {
   pending: "bg-amber-50 text-amber-700",
@@ -24,6 +85,7 @@ export default function RescueList() {
   const [limit, setLimit] = useState(10);
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const { user } = useAuthStore();
 
   // Filter state
   const [search, setSearch] = useState("");
@@ -253,7 +315,9 @@ export default function RescueList() {
                       <td className="px-6 py-4 text-sm text-slate-600 max-w-xs truncate">
                         {r.from_address?.substring(0, 30)} → {r.to_address?.substring(0, 30)}
                       </td>
-                      <td className="px-6 py-4 text-sm text-slate-500">{new Date(r.createdAt).toLocaleDateString()}</td>
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        <DateCell rescue={r} isMine={user && r.creator && user.id === r.creator.id} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
