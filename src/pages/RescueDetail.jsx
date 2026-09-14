@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { getRescue } from "../api/rescue";
-import { ArrowLeft, MapPin, User, Image, Video, Users, Clock, Play } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getRescue, updateRescueDate } from "../api/rescue";
+import { useAuthStore } from "../store/authStore";
+import { ArrowLeft, MapPin, User, Image, Video, Users, Clock, Play, Pencil, Check, X } from "lucide-react";
 
 const statusColors = {
   pending: "bg-amber-50 text-amber-700 border-amber-200",
@@ -10,9 +12,22 @@ const statusColors = {
   cancelled: "bg-red-50 text-red-700 border-red-200",
 };
 
+function toDatetimeLocal(dateStr) {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function RescueDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { user } = useAuthStore();
+
+  const [editingDate, setEditingDate] = useState(false);
+  const [dateValue, setDateValue] = useState("");
+  const [dateError, setDateError] = useState("");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["rescue", id],
@@ -28,9 +43,32 @@ export default function RescueDetail() {
     persons: Array.isArray(rawRescue.persons) ? rawRescue.persons : rawRescue.persons?.id ? [rawRescue.persons] : [],
   } : null;
 
+  const dateMut = useMutation({
+    mutationFn: (created_at) => updateRescueDate(id, created_at),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["rescue", id] });
+      setEditingDate(false);
+      setDateError("");
+    },
+    onError: (err) => setDateError(err.response?.data?.error?.message || "Failed to update date"),
+  });
+
   if (isLoading) return <div className="text-center py-12 text-slate-500">Loading...</div>;
   if (error) return <div className="text-center py-12 text-red-500">Failed to load rescue</div>;
   if (!rescue) return <div className="text-center py-12 text-slate-500">Rescue not found</div>;
+
+  const isCreator = user && rescue.creator && user.id === rescue.creator.id;
+
+  const startEditDate = () => {
+    setDateError("");
+    setDateValue(toDatetimeLocal(rescue.createdAt));
+    setEditingDate(true);
+  };
+
+  const saveDate = () => {
+    if (!dateValue) return;
+    dateMut.mutate(new Date(dateValue).toISOString());
+  };
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -142,9 +180,36 @@ export default function RescueDetail() {
         </div>
 
         {/* Meta */}
-        <section className="border-t border-slate-100 pt-4 text-xs text-slate-400 flex items-center justify-between">
-          <span className="inline-flex items-center gap-1"><Clock size={12} /> Created: {new Date(rescue.createdAt).toLocaleString()}</span>
-          {rescue.updatedAt && <span>Updated: {new Date(rescue.updatedAt).toLocaleString()}</span>}
+        <section className="border-t border-slate-100 pt-4 text-xs text-slate-400">
+          <div className="flex items-center justify-between">
+            {editingDate ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="datetime-local"
+                  value={dateValue}
+                  onChange={(e) => setDateValue(e.target.value)}
+                  className="border border-slate-200 rounded-lg px-2 py-1 text-xs focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 outline-none"
+                />
+                <button onClick={saveDate} disabled={dateMut.isPending} className="p-1.5 text-green-600 hover:bg-green-50 rounded-lg transition-all disabled:opacity-50" title="Save">
+                  <Check size={14} />
+                </button>
+                <button onClick={() => setEditingDate(false)} className="p-1.5 text-slate-400 hover:bg-slate-50 rounded-lg transition-all" title="Cancel">
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <span className="inline-flex items-center gap-1.5">
+                <Clock size={12} /> Created: {new Date(rescue.createdAt).toLocaleString()}
+                {isCreator && (
+                  <button onClick={startEditDate} className="p-1 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-all" title="Edit date">
+                    <Pencil size={12} />
+                  </button>
+                )}
+              </span>
+            )}
+            {rescue.updatedAt && <span>Updated: {new Date(rescue.updatedAt).toLocaleString()}</span>}
+          </div>
+          {dateError && <p className="text-red-500 mt-1.5">{dateError}</p>}
         </section>
       </div>
     </div>
